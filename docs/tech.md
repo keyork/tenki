@@ -31,7 +31,10 @@ src/
 │   ├── mod.rs        # Theme trait + resolve()
 │   ├── default.rs    # 深色主题
 │   ├── light.rs      # 浅色主题
-│   └── mono.rs       # 单色主题
+│   ├── mono.rs       # 单色主题
+│   ├── ocean.rs      # 海洋主题
+│   ├── forest.rs     # 森林主题
+│   └── sunset.rs     # 日落主题
 └── render/
     ├── mod.rs        # RenderContext + 共享工具函数
     ├── card.rs       # card 渲染器
@@ -148,7 +151,8 @@ longitude = 139.6503    # Option<f64>
 units = "metric"        # "metric" | "imperial"，默认 "metric"
 mode = "card"           # "card" | "compact" | "oneline" | "fullscreen"，默认 "card"
                          # 也支持 "showcase"（5 秒后自动退出）
-theme = "default"       # "default" | "light" | "mono"，默认 "default"
+theme = "default"       # "default" | "light" | "mono" | "ocean" | "forest" | "sunset"
+                        # 默认 "default"
 show_chart = true       # bool，默认 true
 ```
 

@@ -1,4 +1,6 @@
-use super::{chart, location_label, pad_right, scene, truncate_visible, visible_len, RenderContext};
+use super::{
+    chart, location_label, pad_right, scene, truncate_visible, visible_len, RenderContext,
+};
 use crate::{
     art,
     model::{feels_desc, wind_arrow, wind_direction_label, WeatherCondition},

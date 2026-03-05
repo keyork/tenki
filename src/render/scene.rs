@@ -75,6 +75,55 @@ pub fn generate(
     Scene { lines, color }
 }
 
+pub fn animate(base: &Scene, condition: WeatherCondition, is_day: bool, frame: u64) -> Scene {
+    if base.lines.is_empty() {
+        return Scene {
+            lines: Vec::new(),
+            color: base.color,
+        };
+    }
+
+    let mut lines = base.lines.clone();
+    use WeatherCondition::*;
+    match condition {
+        ClearSky | PartlyCloudy => {
+            apply_sway(&mut lines, frame, 1, 3);
+            if !is_day {
+                twinkle(&mut lines, frame, 37);
+            }
+        }
+        Overcast => {
+            apply_sway(&mut lines, frame, 1, 6);
+        }
+        Fog => {
+            apply_fog_flow(&mut lines, frame);
+        }
+        LightDrizzle | LightRain | HeavyRain | Thunderstorm => {
+            let speed = if matches!(condition, LightDrizzle | LightRain) {
+                3
+            } else {
+                2
+            };
+            lines = scroll_down(&lines, ((frame / speed) as usize) % lines.len());
+            apply_rain_shear(&mut lines, frame);
+            if matches!(condition, Thunderstorm) {
+                animate_lightning(&mut lines, frame);
+            }
+        }
+        LightSnow | HeavySnow => {
+            let speed = if matches!(condition, LightSnow) { 4 } else { 3 };
+            lines = scroll_down(&lines, ((frame / speed) as usize) % lines.len());
+            apply_sway(&mut lines, frame, 1, 4);
+            twinkle(&mut lines, frame, 53);
+        }
+    }
+
+    Scene {
+        lines,
+        color: base.color,
+    }
+}
+
 // ── Scene generators ──────────────────────────────────────────────────────────
 
 /// Clear daytime sky — sparse drifting dots, occasional high birds.
@@ -378,4 +427,127 @@ fn heavy_snow(
         lines.push(line);
     }
     (lines, theme.art_color(ArtColor::SnowFlake))
+}
+
+fn wave(frame: u64, amp: isize) -> isize {
+    if amp <= 0 {
+        return 0;
+    }
+    let p = match frame % 8 {
+        0 | 4 => 0,
+        1 | 2 => 1,
+        3 => 0,
+        5 | 6 => -1,
+        _ => 0,
+    };
+    p * amp
+}
+
+fn apply_sway(lines: &mut [String], frame: u64, amp: isize, speed_div: u64) {
+    if amp <= 0 || speed_div == 0 {
+        return;
+    }
+    let phase = frame / speed_div;
+    for (row, line) in lines.iter_mut().enumerate() {
+        let offset = wave(phase + row as u64 / 3, amp);
+        *line = shift_line(line, offset);
+    }
+}
+
+fn apply_fog_flow(lines: &mut [String], frame: u64) {
+    for (row, line) in lines.iter_mut().enumerate() {
+        let base = if row % 2 == 0 {
+            wave(frame / 2 + row as u64, 1)
+        } else {
+            wave(frame / 3 + row as u64, 1)
+        };
+        *line = shift_line(line, base);
+    }
+}
+
+fn apply_rain_shear(lines: &mut [String], frame: u64) {
+    for (row, line) in lines.iter_mut().enumerate() {
+        let offset = match (row + frame as usize) % 4 {
+            0 => -1,
+            1 => 0,
+            2 => -1,
+            _ => 0,
+        };
+        *line = shift_line(line, offset);
+    }
+}
+
+fn animate_lightning(lines: &mut [String], frame: u64) {
+    let flash = frame % 14 == 0 || frame % 14 == 1;
+    if !flash {
+        return;
+    }
+
+    for line in lines.iter_mut() {
+        let mut out = String::with_capacity(line.len());
+        for ch in line.chars() {
+            let next = match ch {
+                '!' => '+',
+                '+' => '*',
+                '*' => '+',
+                _ => ch,
+            };
+            out.push(next);
+        }
+        *line = out;
+    }
+}
+
+fn shift_line(line: &str, offset: isize) -> String {
+    let chars: Vec<char> = line.chars().collect();
+    let width = chars.len();
+    if width == 0 {
+        return String::new();
+    }
+
+    if offset > 0 {
+        let off = (offset as usize).min(width);
+        let mut out = String::with_capacity(width);
+        out.push_str(&" ".repeat(off));
+        out.extend(chars.into_iter().take(width - off));
+        out
+    } else {
+        let off = ((-offset) as usize).min(width);
+        let mut out = String::with_capacity(width);
+        out.extend(chars.into_iter().skip(off));
+        out.push_str(&" ".repeat(off));
+        out
+    }
+}
+
+fn scroll_down(lines: &[String], by: usize) -> Vec<String> {
+    let h = lines.len();
+    if h == 0 {
+        return Vec::new();
+    }
+    let shift = by % h;
+    (0..h)
+        .map(|row| lines[(row + h - shift) % h].clone())
+        .collect()
+}
+
+fn twinkle(lines: &mut [String], frame: u64, cadence: u64) {
+    for (row, line) in lines.iter_mut().enumerate() {
+        let mut out = String::with_capacity(line.len());
+        for (col, ch) in line.chars().enumerate() {
+            let pulse = (row as u64 * 31 + col as u64 * 17 + frame * 13) % cadence == 0;
+            let next = if pulse {
+                match ch {
+                    '.' => '*',
+                    '*' => '+',
+                    '+' => '.',
+                    _ => ch,
+                }
+            } else {
+                ch
+            };
+            out.push(next);
+        }
+        *line = out;
+    }
 }

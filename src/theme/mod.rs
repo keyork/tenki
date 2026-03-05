@@ -1,6 +1,9 @@
 pub mod default;
+pub mod forest;
 pub mod light;
 pub mod mono;
+pub mod ocean;
+pub mod sunset;
 
 use crate::art::colors::ArtColor;
 use crossterm::style::Color;
@@ -25,6 +28,9 @@ pub fn resolve(name: &str) -> Box<dyn Theme> {
     match name {
         "light" => Box::new(light::LightTheme),
         "mono" => Box::new(mono::MonoTheme),
+        "ocean" => Box::new(ocean::OceanTheme),
+        "forest" => Box::new(forest::ForestTheme),
+        "sunset" => Box::new(sunset::SunsetTheme),
         _ => Box::new(default::DefaultTheme),
     }
 }

@@ -39,6 +39,10 @@ struct Cli {
     #[arg(long)]
     no_chart: bool,
 
+    /// Disable fullscreen/showcase animation (static scene)
+    #[arg(long = "static")]
+    static_view: bool,
+
     /// Latitude (overrides city / auto-detect)
     #[arg(long)]
     lat: Option<f64>,
@@ -146,6 +150,7 @@ fn main() {
         units,
         show_chart,
         show_forecast: cli.forecast,
+        animate: !cli.static_view,
     };
 
     let result = match mode {

@@ -75,6 +75,53 @@ pub fn generate(
     Scene { lines, color }
 }
 
+pub fn animate(base: &Scene, condition: WeatherCondition, is_day: bool, frame: u64) -> Scene {
+    if base.lines.is_empty() {
+        return Scene {
+            lines: Vec::new(),
+            color: base.color,
+        };
+    }
+
+    let mut lines = base.lines.clone();
+    use WeatherCondition::*;
+    match condition {
+        ClearSky | PartlyCloudy => {
+            let drift = wave(frame / 2, 2);
+            shift_lines(&mut lines, drift);
+            if !is_day {
+                twinkle(&mut lines, frame);
+            }
+        }
+        Overcast => {
+            let drift = wave(frame / 3, 1);
+            shift_lines(&mut lines, drift);
+        }
+        Fog => {
+            let drift = wave(frame / 2, 2);
+            shift_lines(&mut lines, drift);
+        }
+        LightDrizzle | LightRain | HeavyRain | Thunderstorm => {
+            lines = scroll_down(&lines, (frame as usize) % lines.len());
+            let slant = match frame % 4 {
+                0 | 1 => -1,
+                _ => 0,
+            };
+            shift_lines(&mut lines, slant);
+        }
+        LightSnow | HeavySnow => {
+            lines = scroll_down(&lines, ((frame / 2) as usize) % lines.len());
+            let drift = wave(frame / 2, 1);
+            shift_lines(&mut lines, drift);
+        }
+    }
+
+    Scene {
+        lines,
+        color: base.color,
+    }
+}
+
 // ── Scene generators ──────────────────────────────────────────────────────────
 
 /// Clear daytime sky — sparse drifting dots, occasional high birds.
@@ -378,4 +425,81 @@ fn heavy_snow(
         lines.push(line);
     }
     (lines, theme.art_color(ArtColor::SnowFlake))
+}
+
+fn wave(frame: u64, amp: isize) -> isize {
+    if amp <= 0 {
+        return 0;
+    }
+    let p = match frame % 8 {
+        0 | 4 => 0,
+        1 | 2 => 1,
+        3 => 0,
+        5 | 6 => -1,
+        _ => 0,
+    };
+    p * amp
+}
+
+fn shift_lines(lines: &mut [String], offset: isize) {
+    if offset == 0 {
+        return;
+    }
+    for line in lines.iter_mut() {
+        *line = shift_line(line, offset);
+    }
+}
+
+fn shift_line(line: &str, offset: isize) -> String {
+    let chars: Vec<char> = line.chars().collect();
+    let width = chars.len();
+    if width == 0 {
+        return String::new();
+    }
+
+    if offset > 0 {
+        let off = (offset as usize).min(width);
+        let mut out = String::with_capacity(width);
+        out.push_str(&" ".repeat(off));
+        out.extend(chars.into_iter().take(width - off));
+        out
+    } else {
+        let off = ((-offset) as usize).min(width);
+        let mut out = String::with_capacity(width);
+        out.extend(chars.into_iter().skip(off));
+        out.push_str(&" ".repeat(off));
+        out
+    }
+}
+
+fn scroll_down(lines: &[String], by: usize) -> Vec<String> {
+    let h = lines.len();
+    if h == 0 {
+        return Vec::new();
+    }
+    let shift = by % h;
+    (0..h)
+        .map(|row| lines[(row + h - shift) % h].clone())
+        .collect()
+}
+
+fn twinkle(lines: &mut [String], frame: u64) {
+    for (row, line) in lines.iter_mut().enumerate() {
+        let mut out = String::with_capacity(line.len());
+        for (col, ch) in line.chars().enumerate() {
+            let pulse = (row as u64 * 31 + col as u64 * 17 + frame * 13) % 29 == 0;
+            let next = if pulse {
+                match ch {
+                    '.' => '*',
+                    '*' => '+',
+                    '+' => '.',
+                    _ => ch,
+                }
+            } else {
+                ch
+            };
+            out.push(next);
+        }
+        *line = out;
+    }
 }

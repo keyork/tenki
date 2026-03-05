@@ -13,6 +13,7 @@ pub struct RenderContext<'a> {
     pub units: Units,
     pub show_chart: bool,
     pub show_forecast: bool,
+    pub animate: bool,
 }
 
 pub(crate) fn location_label(data: &WeatherData) -> String {

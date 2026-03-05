@@ -286,12 +286,17 @@ render()
   → EnterAlternateScreen + cursor::Hide
   → run_loop()
       → draw_frame()（首次绘制）
-      → event::poll(150ms) 循环
+      → event::poll(120ms) 循环
           → Key(Q / Esc / Ctrl+C) → break
-          → Resize → draw_frame()（重绘）
+      → 每 tick 递增 frame 并 draw_frame()（持续动画）
   → cursor::Show + LeaveAlternateScreen
   → disable_raw_mode()
 ```
+
+当 CLI 传入 `--static` 时：
+- 背景与主图动画关闭（frame 固定为 0）
+- `fullscreen` 仅在 resize 时重绘
+- `showcase` 为更新倒计时会低频重绘（静态画面）
 
 `draw_frame` 在每次绘制前调用 `cursor::MoveTo(0,0)` + `Clear(All)` 清屏，然后按顺序输出各区块（分隔线 → 标题 → 数据 → 场景 → 图表 → 预报）。
 
@@ -318,6 +323,7 @@ art 与背景的合成：
 - 非 art 行：整行输出背景字符串（bg_color）
 - art 行：`bg[0..art_col]` + art 各色段 + `bg[art_col+ART_WIDTH..]`
 - 字符串切片使用 `.chars().take/skip()` 而非字节索引，确保多字节字符安全
+- art 会依据天气类型做轻微位移（sway/bob），形成“呼吸感”
 
 ---
 
@@ -343,6 +349,15 @@ impl Rng {
 ```
 
 种子来源：`SystemTime::now().as_secs()`，在 `render()` 入口处固定，resize 重绘时种子不变（同一次运行背景图案稳定）。
+
+### 动画层（scene::animate）
+
+`scene::generate()` 先生成静态纹理；`scene::animate()` 再按 frame 与天气类型做动态变换：
+
+- 晴天/多云：水平漂移；夜间额外星点闪烁
+- 阴天/雾：慢速层流
+- 雨/雷暴：纵向滚动 + 斜向偏移，模拟降水
+- 雪：缓慢下落 + 轻微横向漂移
 
 ### 各天气背景策略
 

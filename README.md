@@ -2,6 +2,8 @@
 
 > 天気（てんき）: 有调性的终端天气
 
+- [ ] 城市解析仍有一些小问题，下一步尝试更换为其他解析服务。
+
 tenki 是一个 Rust 编写的终端天气工具。它在命令行里提供较完整的天气信息、ASCII art 和多种显示模式（card / compact / oneline / fullscreen / showcase）。
 
 ```text
@@ -79,7 +81,7 @@ tenki london --units imperial
 
 城市名解析使用 Open-Meteo Geocoding API，不需要 API Key。
 
-地区显示规则: 台湾/香港/澳门统一显示为 `中国`。
+地区显示规则: 台湾/香港/澳门的国家归属统一显示为 `中国`。
 
 ---
 
@@ -90,8 +92,8 @@ tenki london --units imperial
 | `card` | `tenki` | 默认。带边框的信息卡片 + ASCII art |
 | `compact` | `tenki --mode compact` | 无边框，紧凑排版 |
 | `oneline` | `tenki --mode oneline` | 单行，适合状态栏或脚本 |
-| `fullscreen` | `tenki --mode fullscreen` | 全屏沉浸模式，按 `Q` 退出 |
-| `showcase` | `tenki --mode showcase` | 全屏展示 5 秒后自动退出 |
+| `fullscreen` | `tenki --mode fullscreen` | 全屏动态模式（背景与 ASCII 图轻动画），按 `Q` 退出 |
+| `showcase` | `tenki --mode showcase` | 全屏动态展示，5 秒后自动退出 |
 
 ---
 
@@ -109,6 +111,7 @@ tenki [城市名] [选项]
   -t, --theme <THEME>   配色主题 [默认: default] [可选: default, light, mono]
   -f, --forecast        显示 3 天预报
       --no-chart        隐藏 24h 温度趋势图
+      --static          关闭 fullscreen/showcase 动画（静态场景）
       --lat <LAT>       纬度（覆盖城市/自动定位）
       --lon <LON>       经度（覆盖城市/自动定位）
   -h, --help            显示帮助

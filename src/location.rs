@@ -119,7 +119,8 @@ fn normalize_country(api_country: Option<&str>) -> String {
         || c.contains("Macao")
         || c.contains("Macau")
         || c.contains("澳门") // 简体
-        || c.contains("澳門") // 繁体
+        || c.contains("澳門")
+    // 繁体
     {
         return "中国".into();
     }

@@ -22,6 +22,8 @@ const FIXED_ROWS: usize = 16;
 const MIN_SCENE_ROWS: usize = 6;
 const SEP: &str = "━";
 const SHOWCASE_DURATION: Duration = Duration::from_secs(5);
+const FRAME_INTERVAL: Duration = Duration::from_millis(120);
+const STATIC_SHOWCASE_INTERVAL: Duration = Duration::from_millis(250);
 
 pub fn render(ctx: &RenderContext) -> io::Result<()> {
     render_with_timeout(ctx, None)
@@ -56,7 +58,8 @@ fn run_loop<W: Write>(
     auto_exit_after: Option<Duration>,
 ) -> io::Result<()> {
     let start = Instant::now();
-    draw_frame(out, ctx, seed, auto_exit_after, start)?;
+    let mut frame = 0u64;
+    draw_frame(out, ctx, seed, auto_exit_after, start, frame)?;
 
     loop {
         if let Some(limit) = auto_exit_after {
@@ -65,20 +68,35 @@ fn run_loop<W: Write>(
             }
         }
 
-        if event::poll(std::time::Duration::from_millis(150))? {
+        let poll_interval = if ctx.animate {
+            FRAME_INTERVAL
+        } else if auto_exit_after.is_some() {
+            STATIC_SHOWCASE_INTERVAL
+        } else {
+            Duration::from_secs(1)
+        };
+
+        let mut resized = false;
+        if event::poll(poll_interval)? {
             match event::read()? {
                 Event::Key(key) => match key.code {
                     KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => break,
                     KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => break,
                     _ => {}
                 },
-                Event::Resize(_, _) => draw_frame(out, ctx, seed, auto_exit_after, start)?,
+                Event::Resize(_, _) => resized = true,
                 _ => {}
             }
         }
 
-        if auto_exit_after.is_some() {
-            draw_frame(out, ctx, seed, auto_exit_after, start)?;
+        if ctx.animate {
+            frame = frame.wrapping_add(1);
+            draw_frame(out, ctx, seed, auto_exit_after, start, frame)?;
+            continue;
+        }
+
+        if resized || auto_exit_after.is_some() {
+            draw_frame(out, ctx, seed, auto_exit_after, start, 0)?;
         }
     }
     Ok(())
@@ -90,6 +108,7 @@ fn draw_frame<W: Write>(
     seed: u64,
     auto_exit_after: Option<Duration>,
     start: Instant,
+    frame: u64,
 ) -> io::Result<()> {
     let (width, rows) = terminal_size();
 
@@ -113,13 +132,23 @@ fn draw_frame<W: Write>(
         seed,
         ctx.theme,
     );
+    let bg = if ctx.animate {
+        scene::animate(&bg, condition, d.current.is_day, frame)
+    } else {
+        bg
+    };
 
     print_sep(out, width, ctx)?;
     print_header(out, ctx, width, condition)?;
     print_sep(out, width, ctx)?;
     print_stats(out, ctx, width)?;
     print_sep(out, width, ctx)?;
-    print_scene(out, ctx, &art, &bg, width, scene_rows)?;
+    let motion = if ctx.animate {
+        art_motion(condition, frame)
+    } else {
+        (0, 0)
+    };
+    print_scene(out, ctx, &art, &bg, width, scene_rows, motion)?;
     print_sep(out, width, ctx)?;
 
     if ctx.show_chart && !ctx.data.hourly.is_empty() {
@@ -363,10 +392,16 @@ fn print_scene<W: Write>(
     bg: &scene::Scene,
     width: usize,
     scene_height: usize,
+    motion: (isize, isize),
 ) -> io::Result<()> {
     let art_w = crate::art::pieces::ART_WIDTH;
-    let art_col = width.saturating_sub(art_w) / 2;
-    let art_row_start = scene_height.saturating_sub(art.len()) / 2;
+    let base_col = width.saturating_sub(art_w) / 2;
+    let base_row = scene_height.saturating_sub(art.len()) / 2;
+    let (dx, dy) = motion;
+    let max_col = width.saturating_sub(art_w);
+    let max_row = scene_height.saturating_sub(art.len());
+    let art_col = clamp_shift(base_col, dx, max_col);
+    let art_row_start = clamp_shift(base_row, dy, max_row);
     let art_row_end = art_row_start + art.len();
 
     for row in 0..scene_height {
@@ -399,6 +434,34 @@ fn print_scene<W: Write>(
         nl(out)?;
     }
     Ok(())
+}
+
+fn clamp_shift(base: usize, delta: isize, max: usize) -> usize {
+    (base as isize + delta).clamp(0, max as isize) as usize
+}
+
+fn art_motion(condition: WeatherCondition, frame: u64) -> (isize, isize) {
+    let sway = match (frame / 2) % 8 {
+        0 | 4 => 0,
+        1 | 2 => 1,
+        3 => 0,
+        5 | 6 => -1,
+        _ => 0,
+    };
+    let bob = match (frame / 3) % 8 {
+        0 | 1 | 4 | 5 => 0,
+        2 => 1,
+        6 => -1,
+        _ => 0,
+    };
+
+    use WeatherCondition::*;
+    match condition {
+        ClearSky | PartlyCloudy => (sway, bob),
+        Overcast | Fog => (sway, 0),
+        LightDrizzle | LightRain | HeavyRain | Thunderstorm => (sway, 0),
+        LightSnow | HeavySnow => (sway, bob),
+    }
 }
 
 fn print_chart<W: Write>(out: &mut W, ctx: &RenderContext, width: usize) -> io::Result<()> {

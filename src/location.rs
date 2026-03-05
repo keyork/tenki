@@ -113,6 +113,7 @@ fn normalize_country(api_country: Option<&str>) -> String {
     if c.contains("Taiwan")
         || c.contains("台湾") // 简体/繁体同形
         || c.contains("臺灣") // 繁体
+        || c.contains("台灣") // 简体
         || c.contains("Hong Kong")
         || c.contains("香港") // 简体/繁体同形
         || c.contains("Macao")

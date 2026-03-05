@@ -28,41 +28,27 @@ fn line(segments: Vec<ArtSegment>) -> ArtLine {
 
 pub const ART_WIDTH: usize = 22;
 
-fn plain(text: &str, color: ArtColor) -> ArtLine {
-    vec![seg!(text, color)]
+fn mono(text: &str, color: ArtColor) -> ArtLine {
+    let mut out: String = text.chars().take(ART_WIDTH).collect();
+    let pad = ART_WIDTH.saturating_sub(out.chars().count());
+    if pad > 0 {
+        out.push_str(&" ".repeat(pad));
+    }
+    vec![seg!(out, color)]
 }
 
 fn empty() -> ArtLine {
-    vec![seg!("                      ", ArtColor::CloudLight)]
+    mono("", ArtColor::CloudLight)
 }
 
 // ── Clear Sky (day) ──────────────────────────────────────────────────────────
-//
-//      \  ·  |  ·  /
-//    ·  '───────'  ·
-//  ─  (  ° · °  )  ─
-//    ·  '───────'  ·
-//      /  ·  |  ·  \
-//
 pub fn clear_sky_day() -> ArtPiece {
     vec![
-        line(vec![seg!("     \\  ·  |  ·  /    ", ArtColor::SunRay)]),
-        line(vec![
-            seg!("   ·  ", ArtColor::SunRay),
-            seg!("'───────'", ArtColor::SunRay),
-            seg!("  ·    ", ArtColor::SunRay),
-        ]),
-        line(vec![
-            seg!("  ─  ", ArtColor::SunRay),
-            seg!("(  ° · °  )", ArtColor::SunCore),
-            seg!("  ─   ", ArtColor::SunRay),
-        ]),
-        line(vec![
-            seg!("   ·  ", ArtColor::SunRay),
-            seg!("'───────'", ArtColor::SunRay),
-            seg!("  ·    ", ArtColor::SunRay),
-        ]),
-        line(vec![seg!("     /  ·  |  ·  \\    ", ArtColor::SunRay)]),
+        mono("    \\   /", ArtColor::SunRay),
+        mono("     .-.", ArtColor::SunRay),
+        mono("  -- (   ) --", ArtColor::SunCore),
+        mono("     `-'", ArtColor::SunRay),
+        mono("    /   \\", ArtColor::SunRay),
         empty(),
         empty(),
         empty(),
@@ -72,37 +58,13 @@ pub fn clear_sky_day() -> ArtPiece {
 // ── Clear Sky (night) ────────────────────────────────────────────────────────
 pub fn clear_sky_night() -> ArtPiece {
     vec![
-        line(vec![seg!("  ·          ·        ", ArtColor::Star)]),
-        line(vec![
-            seg!("      ", ArtColor::Star),
-            seg!(".─────.  ", ArtColor::MoonBody),
-            seg!("  ·   ", ArtColor::Star),
-        ]),
-        line(vec![
-            seg!("  ·  /", ArtColor::MoonBody),
-            seg!("  ° °  ", ArtColor::MoonBody),
-            seg!("\\  ·  ", ArtColor::MoonBody),
-        ]),
-        line(vec![
-            seg!("    /", ArtColor::MoonBody),
-            seg!("  °   °  ", ArtColor::MoonBody),
-            seg!("\\    ", ArtColor::MoonBody),
-        ]),
-        line(vec![
-            seg!("    \\", ArtColor::MoonBody),
-            seg!("  °   °  ", ArtColor::MoonBody),
-            seg!("/    ", ArtColor::MoonBody),
-        ]),
-        line(vec![
-            seg!("  ·  \\", ArtColor::MoonBody),
-            seg!("  ° °  ", ArtColor::MoonBody),
-            seg!("/  ·  ", ArtColor::MoonBody),
-        ]),
-        line(vec![
-            seg!(" ·    ", ArtColor::Star),
-            seg!("'─────'", ArtColor::MoonBody),
-            seg!("    ·  ", ArtColor::Star),
-        ]),
+        mono("   .      .      *", ArtColor::Star),
+        mono("      _..._", ArtColor::MoonBody),
+        mono("    .::::::.", ArtColor::MoonBody),
+        mono("   :::::::::", ArtColor::MoonBody),
+        mono("   `:::::::'", ArtColor::MoonBody),
+        mono("      `'::'", ArtColor::MoonBody),
+        mono(" *      .      .", ArtColor::Star),
         empty(),
     ]
 }
@@ -110,21 +72,18 @@ pub fn clear_sky_night() -> ArtPiece {
 // ── Partly Cloudy (day) ──────────────────────────────────────────────────────
 pub fn partly_cloudy_day() -> ArtPiece {
     vec![
-        line(vec![seg!("    \\  /              ", ArtColor::SunRay)]),
+        mono("   \\  /", ArtColor::SunRay),
         line(vec![
-            seg!("  _ /\"\"", ArtColor::SunRay),
-            seg!(".-.", ArtColor::CloudLight),
-            seg!("           ", ArtColor::CloudLight),
+            seg!(" _ /\"\"", ArtColor::SunRay),
+            seg!(".-.             ", ArtColor::CloudLight),
         ]),
         line(vec![
-            seg!("    \\_ ", ArtColor::SunRay),
-            seg!("(   ).", ArtColor::CloudLight),
-            seg!("          ", ArtColor::CloudLight),
+            seg!("   \\_", ArtColor::SunRay),
+            seg!("(   ).           ", ArtColor::CloudLight),
         ]),
         line(vec![
-            seg!("       ", ArtColor::CloudLight),
-            seg!("(___(__)", ArtColor::CloudLight),
-            seg!("         ", ArtColor::CloudLight),
+            seg!("   /", ArtColor::SunRay),
+            seg!("(___(__)          ", ArtColor::CloudLight),
         ]),
         empty(),
         empty(),
@@ -136,27 +95,22 @@ pub fn partly_cloudy_day() -> ArtPiece {
 // ── Partly Cloudy (night) ────────────────────────────────────────────────────
 pub fn partly_cloudy_night() -> ArtPiece {
     vec![
-        line(vec![seg!("  ·                   ", ArtColor::Star)]),
+        mono("   .      *", ArtColor::Star),
         line(vec![
-            seg!("   (", ArtColor::MoonBody),
-            seg!(") ", ArtColor::MoonBody),
-            seg!(".-.", ArtColor::CloudLight),
-            seg!("            ", ArtColor::CloudLight),
+            seg!("     _..._  ", ArtColor::MoonBody),
+            seg!(".--.      ", ArtColor::CloudLight),
         ]),
         line(vec![
-            seg!("    ", ArtColor::MoonBody),
-            seg!("  ", ArtColor::MoonBody),
-            seg!("(   ).", ArtColor::CloudLight),
-            seg!("         ", ArtColor::CloudLight),
+            seg!("   .::::. `.", ArtColor::MoonBody),
+            seg!(" (   ).   ", ArtColor::CloudLight),
         ]),
         line(vec![
-            seg!("       ", ArtColor::CloudLight),
-            seg!("(___(__)", ArtColor::CloudLight),
-            seg!("        ", ArtColor::CloudLight),
+            seg!("  ::::::.  :", ArtColor::MoonBody),
+            seg!(" (___(__) ", ArtColor::CloudLight),
         ]),
-        line(vec![seg!("  ·               ·   ", ArtColor::Star)]),
-        empty(),
-        empty(),
+        mono("   `:::::' .'", ArtColor::MoonBody),
+        mono("     `'::-'", ArtColor::MoonBody),
+        mono(" *        .", ArtColor::Star),
         empty(),
     ]
 }
@@ -165,27 +119,26 @@ pub fn partly_cloudy_night() -> ArtPiece {
 pub fn overcast() -> ArtPiece {
     vec![
         empty(),
-        line(vec![seg!("      .--.            ", ArtColor::CloudDark)]),
-        line(vec![seg!("   .-(    ).          ", ArtColor::CloudDark)]),
-        line(vec![seg!("  (___.__)__)         ", ArtColor::CloudDark)]),
-        line(vec![seg!("   .--.               ", ArtColor::CloudDark)]),
-        line(vec![seg!(" -(      )-           ", ArtColor::CloudDark)]),
-        line(vec![seg!("(_______)__)          ", ArtColor::CloudDark)]),
+        mono("      .--.  .--.", ArtColor::CloudDark),
+        mono("   .-(    )(    ).", ArtColor::CloudDark),
+        mono("  (___.__)(___.__)", ArtColor::CloudDark),
+        mono("   .-(____)(____)-.", ArtColor::CloudDark),
+        mono("  (___.__)(___.__)", ArtColor::CloudDark),
+        mono("     `-..-''-..-'", ArtColor::CloudDark),
         empty(),
     ]
 }
 
 // ── Fog ──────────────────────────────────────────────────────────────────────
-//   Layered ≈ waves for a misty atmosphere
 pub fn fog() -> ArtPiece {
     vec![
         empty(),
-        plain("   ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈    ", ArtColor::FogMist),
-        plain("  ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈   ", ArtColor::FogMist),
-        plain("   ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈    ", ArtColor::FogMist),
-        plain("  ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈   ", ArtColor::FogMist),
-        plain("   ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈    ", ArtColor::FogMist),
-        plain("  ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈   ", ArtColor::FogMist),
+        mono(" _ - _ - _ - _ -", ArtColor::FogMist),
+        mono("  _ - _ - _ - _", ArtColor::FogMist),
+        mono(" _ - _ - _ - _ -", ArtColor::FogMist),
+        mono("  _ - _ - _ - _", ArtColor::FogMist),
+        mono(" _ - _ - _ - _ -", ArtColor::FogMist),
+        mono("  _ - _ - _ - _", ArtColor::FogMist),
         empty(),
     ]
 }
@@ -194,12 +147,12 @@ pub fn fog() -> ArtPiece {
 pub fn light_drizzle() -> ArtPiece {
     vec![
         empty(),
-        line(vec![seg!("      .--.            ", ArtColor::CloudLight)]),
-        line(vec![seg!("   .-(    ).          ", ArtColor::CloudLight)]),
-        line(vec![seg!("  (___.__)__)         ", ArtColor::CloudLight)]),
-        line(vec![seg!("   ´ ´ ´ ´            ", ArtColor::RainDrop)]),
-        line(vec![seg!("  ´ ´ ´ ´             ", ArtColor::RainDrop)]),
-        empty(),
+        mono("     .--.", ArtColor::CloudLight),
+        mono("  .-(    ).", ArtColor::CloudLight),
+        mono(" (___.__)__)", ArtColor::CloudLight),
+        mono("  .  .  .  .", ArtColor::RainDrop),
+        mono("   .  .  .", ArtColor::RainDrop),
+        mono("  .  .  .  .", ArtColor::RainDrop),
         empty(),
     ]
 }
@@ -208,12 +161,12 @@ pub fn light_drizzle() -> ArtPiece {
 pub fn light_rain() -> ArtPiece {
     vec![
         empty(),
-        line(vec![seg!("      .--.            ", ArtColor::CloudDark)]),
-        line(vec![seg!("   .-(    ).          ", ArtColor::CloudDark)]),
-        line(vec![seg!("  (___.__)__)         ", ArtColor::CloudDark)]),
-        line(vec![seg!("  ╱ ╱ ╱ ╱            ", ArtColor::RainDrop)]),
-        line(vec![seg!(" ╱ ╱ ╱ ╱             ", ArtColor::RainDrop)]),
-        empty(),
+        mono("     .--.", ArtColor::CloudDark),
+        mono("  .-(    ).", ArtColor::CloudDark),
+        mono(" (___.__)__)", ArtColor::CloudDark),
+        mono("  /  /  /  /", ArtColor::RainDrop),
+        mono("   /  /  /", ArtColor::RainDrop),
+        mono("  /  /  /  /", ArtColor::RainDrop),
         empty(),
     ]
 }
@@ -222,58 +175,40 @@ pub fn light_rain() -> ArtPiece {
 pub fn heavy_rain() -> ArtPiece {
     vec![
         empty(),
-        line(vec![seg!("      .--.            ", ArtColor::CloudDark)]),
-        line(vec![seg!("   .-(    ).          ", ArtColor::CloudDark)]),
-        line(vec![seg!("  (___.__)__)         ", ArtColor::CloudDark)]),
-        line(vec![seg!(" ‖╱‖╱‖╱‖╱           ", ArtColor::RainDrop)]),
-        line(vec![seg!(" ╱‖╱‖╱‖╱‖           ", ArtColor::RainDrop)]),
-        line(vec![seg!(" ‖╱‖╱‖╱‖╱           ", ArtColor::RainDrop)]),
-        empty(),
+        mono("     .--.", ArtColor::CloudDark),
+        mono("  .-(    ).", ArtColor::CloudDark),
+        mono(" (___.__)__)", ArtColor::CloudDark),
+        mono("  // // // //", ArtColor::RainDrop),
+        mono("  || || || ||", ArtColor::RainDrop),
+        mono("  // // // //", ArtColor::RainDrop),
+        mono("  || || || ||", ArtColor::RainDrop),
     ]
 }
 
 // ── Thunderstorm ─────────────────────────────────────────────────────────────
-//   Uses ϟ (U+03DF Greek small letter koppa) for lightning — not emoji
 pub fn thunderstorm() -> ArtPiece {
     vec![
         empty(),
-        line(vec![seg!("      .--.            ", ArtColor::CloudDark)]),
-        line(vec![seg!("   .-(    ).          ", ArtColor::CloudDark)]),
-        line(vec![seg!("  (___.__)__)         ", ArtColor::CloudDark)]),
-        line(vec![
-            seg!("  ", ArtColor::RainDrop),
-            seg!("ϟ", ArtColor::Lightning),
-            seg!("╱ ╱", ArtColor::RainDrop),
-            seg!("ϟ", ArtColor::Lightning),
-            seg!("╱          ", ArtColor::RainDrop),
-        ]),
-        line(vec![
-            seg!(" ╱ ╱", ArtColor::RainDrop),
-            seg!("ϟ", ArtColor::Lightning),
-            seg!("╱ ╱             ", ArtColor::RainDrop),
-        ]),
-        line(vec![
-            seg!("  ", ArtColor::RainDrop),
-            seg!("ϟ", ArtColor::Lightning),
-            seg!("╱ ╱", ArtColor::RainDrop),
-            seg!("ϟ", ArtColor::Lightning),
-            seg!("╱          ", ArtColor::RainDrop),
-        ]),
-        empty(),
+        mono("     .--.", ArtColor::CloudDark),
+        mono("  .-(    ).", ArtColor::CloudDark),
+        mono(" (___.__)__)", ArtColor::CloudDark),
+        mono("  // // // //", ArtColor::RainDrop),
+        mono("     /\\/\\  /\\/\\", ArtColor::Lightning),
+        mono("  || || || ||", ArtColor::RainDrop),
+        mono("      \\/    \\/", ArtColor::Lightning),
     ]
 }
 
 // ── Light Snow ───────────────────────────────────────────────────────────────
-//   ❄ (U+2744 SNOWFLAKE) — Dingbats block, not emoji
 pub fn light_snow() -> ArtPiece {
     vec![
         empty(),
-        line(vec![seg!("      .--.            ", ArtColor::CloudLight)]),
-        line(vec![seg!("   .-(    ).          ", ArtColor::CloudLight)]),
-        line(vec![seg!("  (___.__)__)         ", ArtColor::CloudLight)]),
-        line(vec![seg!("  ❄  ❄  ❄             ", ArtColor::SnowFlake)]),
-        line(vec![seg!("    ❄  ❄  ❄           ", ArtColor::SnowFlake)]),
-        line(vec![seg!("  ❄  ❄  ❄             ", ArtColor::SnowFlake)]),
+        mono("     .--.", ArtColor::CloudLight),
+        mono("  .-(    ).", ArtColor::CloudLight),
+        mono(" (___.__)__)", ArtColor::CloudLight),
+        mono("    *   *   *", ArtColor::SnowFlake),
+        mono("      *   *", ArtColor::SnowFlake),
+        mono("    *   *   *", ArtColor::SnowFlake),
         empty(),
     ]
 }
@@ -282,12 +217,54 @@ pub fn light_snow() -> ArtPiece {
 pub fn heavy_snow() -> ArtPiece {
     vec![
         empty(),
-        line(vec![seg!("      .--.            ", ArtColor::CloudDark)]),
-        line(vec![seg!("   .-(    ).          ", ArtColor::CloudDark)]),
-        line(vec![seg!("  (___.__)__)         ", ArtColor::CloudDark)]),
-        line(vec![seg!(" ❄ ❄ ❄ ❄ ❄ ❄          ", ArtColor::SnowFlake)]),
-        line(vec![seg!("  ❄ ❄ ❄ ❄ ❄           ", ArtColor::SnowFlake)]),
-        line(vec![seg!(" ❄ ❄ ❄ ❄ ❄ ❄          ", ArtColor::SnowFlake)]),
-        line(vec![seg!("  ❄ ❄ ❄ ❄ ❄           ", ArtColor::SnowFlake)]),
+        mono("     .--.", ArtColor::CloudDark),
+        mono("  .-(    ).", ArtColor::CloudDark),
+        mono(" (___.__)__)", ArtColor::CloudDark),
+        mono("   * * * * * * *", ArtColor::SnowFlake),
+        mono("  * * * * * * * *", ArtColor::SnowFlake),
+        mono("   * * * * * * *", ArtColor::SnowFlake),
+        mono("  * * * * * * * *", ArtColor::SnowFlake),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn width(line: &ArtLine) -> usize {
+        line.iter().map(|seg| seg.text.chars().count()).sum()
+    }
+
+    fn all_pieces() -> Vec<ArtPiece> {
+        vec![
+            clear_sky_day(),
+            clear_sky_night(),
+            partly_cloudy_day(),
+            partly_cloudy_night(),
+            overcast(),
+            fog(),
+            light_drizzle(),
+            light_rain(),
+            heavy_rain(),
+            thunderstorm(),
+            light_snow(),
+            heavy_snow(),
+        ]
+    }
+
+    #[test]
+    fn every_piece_has_expected_height() {
+        for piece in all_pieces() {
+            assert_eq!(piece.len(), 8);
+        }
+    }
+
+    #[test]
+    fn every_line_matches_art_width() {
+        for piece in all_pieces() {
+            for line in piece {
+                assert_eq!(width(&line), ART_WIDTH);
+            }
+        }
+    }
 }

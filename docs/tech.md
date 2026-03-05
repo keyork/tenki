@@ -40,6 +40,11 @@ src/
     ├── fullscreen.rs # fullscreen 渲染器（交互式事件循环）
     ├── chart.rs      # 24h 温度趋势图（含 wide 变体）
     └── scene.rs      # 全屏背景图案生成器
+
+docs/
+├── product.md        # 产品说明
+├── tech.md           # 技术说明
+└── design.md         # ASCII 图稿基线（与 pieces.rs 对齐）
 ```
 
 ---

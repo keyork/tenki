@@ -87,32 +87,34 @@ pub fn animate(base: &Scene, condition: WeatherCondition, is_day: bool, frame: u
     use WeatherCondition::*;
     match condition {
         ClearSky | PartlyCloudy => {
-            let drift = wave(frame / 2, 2);
-            shift_lines(&mut lines, drift);
+            apply_sway(&mut lines, frame, 1, 3);
             if !is_day {
-                twinkle(&mut lines, frame);
+                twinkle(&mut lines, frame, 37);
             }
         }
         Overcast => {
-            let drift = wave(frame / 3, 1);
-            shift_lines(&mut lines, drift);
+            apply_sway(&mut lines, frame, 1, 6);
         }
         Fog => {
-            let drift = wave(frame / 2, 2);
-            shift_lines(&mut lines, drift);
+            apply_fog_flow(&mut lines, frame);
         }
         LightDrizzle | LightRain | HeavyRain | Thunderstorm => {
-            lines = scroll_down(&lines, (frame as usize) % lines.len());
-            let slant = match frame % 4 {
-                0 | 1 => -1,
-                _ => 0,
+            let speed = if matches!(condition, LightDrizzle | LightRain) {
+                3
+            } else {
+                2
             };
-            shift_lines(&mut lines, slant);
+            lines = scroll_down(&lines, ((frame / speed) as usize) % lines.len());
+            apply_rain_shear(&mut lines, frame);
+            if matches!(condition, Thunderstorm) {
+                animate_lightning(&mut lines, frame);
+            }
         }
         LightSnow | HeavySnow => {
-            lines = scroll_down(&lines, ((frame / 2) as usize) % lines.len());
-            let drift = wave(frame / 2, 1);
-            shift_lines(&mut lines, drift);
+            let speed = if matches!(condition, LightSnow) { 4 } else { 3 };
+            lines = scroll_down(&lines, ((frame / speed) as usize) % lines.len());
+            apply_sway(&mut lines, frame, 1, 4);
+            twinkle(&mut lines, frame, 53);
         }
     }
 
@@ -441,12 +443,58 @@ fn wave(frame: u64, amp: isize) -> isize {
     p * amp
 }
 
-fn shift_lines(lines: &mut [String], offset: isize) {
-    if offset == 0 {
+fn apply_sway(lines: &mut [String], frame: u64, amp: isize, speed_div: u64) {
+    if amp <= 0 || speed_div == 0 {
         return;
     }
-    for line in lines.iter_mut() {
+    let phase = frame / speed_div;
+    for (row, line) in lines.iter_mut().enumerate() {
+        let offset = wave(phase + row as u64 / 3, amp);
         *line = shift_line(line, offset);
+    }
+}
+
+fn apply_fog_flow(lines: &mut [String], frame: u64) {
+    for (row, line) in lines.iter_mut().enumerate() {
+        let base = if row % 2 == 0 {
+            wave(frame / 2 + row as u64, 1)
+        } else {
+            wave(frame / 3 + row as u64, 1)
+        };
+        *line = shift_line(line, base);
+    }
+}
+
+fn apply_rain_shear(lines: &mut [String], frame: u64) {
+    for (row, line) in lines.iter_mut().enumerate() {
+        let offset = match (row + frame as usize) % 4 {
+            0 => -1,
+            1 => 0,
+            2 => -1,
+            _ => 0,
+        };
+        *line = shift_line(line, offset);
+    }
+}
+
+fn animate_lightning(lines: &mut [String], frame: u64) {
+    let flash = frame % 14 == 0 || frame % 14 == 1;
+    if !flash {
+        return;
+    }
+
+    for line in lines.iter_mut() {
+        let mut out = String::with_capacity(line.len());
+        for ch in line.chars() {
+            let next = match ch {
+                '!' => '+',
+                '+' => '*',
+                '*' => '+',
+                _ => ch,
+            };
+            out.push(next);
+        }
+        *line = out;
     }
 }
 
@@ -483,11 +531,11 @@ fn scroll_down(lines: &[String], by: usize) -> Vec<String> {
         .collect()
 }
 
-fn twinkle(lines: &mut [String], frame: u64) {
+fn twinkle(lines: &mut [String], frame: u64, cadence: u64) {
     for (row, line) in lines.iter_mut().enumerate() {
         let mut out = String::with_capacity(line.len());
         for (col, ch) in line.chars().enumerate() {
-            let pulse = (row as u64 * 31 + col as u64 * 17 + frame * 13) % 29 == 0;
+            let pulse = (row as u64 * 31 + col as u64 * 17 + frame * 13) % cadence == 0;
             let next = if pulse {
                 match ch {
                     '.' => '*',

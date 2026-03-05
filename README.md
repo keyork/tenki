@@ -125,4 +125,4 @@ show_chart = true
 
 ## License
 
-MIT
+Apache License 2.0

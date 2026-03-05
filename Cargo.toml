@@ -1,0 +1,20 @@
+[package]
+name = "tenki"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "有调性的终端天气 CLI"
+license = "MIT"
+
+[[bin]]
+name = "tenki"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+ureq = { version = "2", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+crossterm = "0.27"
+dirs = "5"

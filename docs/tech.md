@@ -3,7 +3,7 @@
 ## 项目概况
 
 | 项目 | 值 |
-|------|-----|
+| ------ | ----- |
 | 语言 | Rust 2021 edition |
 | MSRV | 1.75 |
 | 二进制名 | `tenki` |
@@ -15,7 +15,7 @@
 
 ## 目录结构
 
-```
+```text
 src/
 ├── main.rs           # CLI 入口，参数解析，模块协调
 ├── config.rs         # TOML 配置加载
@@ -47,7 +47,7 @@ src/
 ## 依赖说明
 
 | 依赖 | 版本 | 用途 |
-|------|------|------|
+| ------ | ------ | ------ |
 | `clap` | 4（derive） | CLI 参数解析，`#[derive(Parser)]` 方式 |
 | `ureq` | 2（json feature） | 同步 HTTP 客户端，JSON 反序列化 |
 | `serde` | 1（derive） | 序列化/反序列化框架 |
@@ -149,7 +149,7 @@ show_chart = true       # bool，默认 true
 
 ### 配置加载流程
 
-```
+```text
 config::load()
   → dirs::config_dir()           // 获取 ~/.config 路径
   → read_to_string("tenki/config.toml")
@@ -159,7 +159,7 @@ config::load()
 
 ### 参数优先级
 
-```
+```text
 CLI 参数 > 配置文件 > 程序默认值
 ```
 
@@ -187,7 +187,7 @@ pub fn from_city(name: &str) -> Result<Location, String>
 
 请求 Open-Meteo Geocoding API（无需 API Key）：
 
-```
+```text
 GET https://geocoding-api.open-meteo.com/v1/search
     ?name={city_name}&count=1&language=zh&format=json
 ```
@@ -203,7 +203,7 @@ pub fn from_ip() -> Result<Location, String>
 
 请求 ip-api.com：
 
-```
+```text
 GET http://ip-api.com/json/?fields=status,city,country,lat,lon
 ```
 
@@ -217,7 +217,7 @@ GET http://ip-api.com/json/?fields=status,city,country,lat,lon
 
 ### API 请求结构
 
-```
+```text
 GET https://api.open-meteo.com/v1/forecast
     ?latitude={lat}
     &longitude={lon}
@@ -280,7 +280,7 @@ pub(crate) fn is_wide(c: char) -> bool
 
 **交互式事件循环模式**，使用 crossterm 原始模式：
 
-```
+```text
 render()
   → enable_raw_mode()
   → EnterAlternateScreen + cursor::Hide
@@ -305,7 +305,7 @@ fn nl<W: Write>(out: &mut W) -> io::Result<()> {
 
 ### 全屏场景布局计算
 
-```
+```text
 固定行数 FIXED_ROWS = 16
 场景行数 = max(terminal_rows - FIXED_ROWS, MIN_SCENE_ROWS=6)
 
@@ -314,6 +314,7 @@ art 垂直居中：art_row_start = (scene_rows - art_height) / 2
 ```
 
 art 与背景的合成：
+
 - 非 art 行：整行输出背景字符串（bg_color）
 - art 行：`bg[0..art_col]` + art 各色段 + `bg[art_col+ART_WIDTH..]`
 - 字符串切片使用 `.chars().take/skip()` 而非字节索引，确保多字节字符安全
@@ -346,7 +347,7 @@ impl Rng {
 ### 各天气背景策略
 
 | 天气 | 字符集 | 颜色令牌 | 密度策略 |
-|------|--------|----------|---------|
+| ------ | -------- | ---------- | --------- |
 | 晴天 | `.` `v`（飞鸟） | `dim_color` | 稀疏散点，鸟只在上1/4区域 |
 | 夜晚 | `+` `*` `.` | `ArtColor::Star` | 亮度分级（+>*>.） |
 | 多云 | `#` `:` `.` | `ArtColor::CloudLight` | 上半部更密 |
@@ -412,7 +413,7 @@ pub enum ArtColor {
 
 `chart::render_chart_wide()` — 按传入 `width` 均匀分布8列：
 
-```
+```text
 每列宽度 col_w = (width - 2) / 8
 标签/温度/方块 在列内居中：left_pad = (col_w - label.len()) / 2
 ```
@@ -426,7 +427,7 @@ const BLOCKS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█
 
 高度归一化算法：
 
-```
+```text
 normalized = (temp - min) / (max - min).max(1.0)
 block_idx  = (normalized * 7.0) as usize
 ```
@@ -450,7 +451,7 @@ in = mm × 0.0393701
 
 ## CLI 入口流程
 
-```
+```text
 main()
   1. Cli::command().get_matches()         // clap 解析参数来源
      + Cli::from_arg_matches()

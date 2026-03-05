@@ -303,6 +303,7 @@ render()
 ```
 
 当 CLI 传入 `--static` 时：
+
 - 背景与主图动画关闭（frame 固定为 0）
 - `fullscreen` 仅在 resize 时重绘
 - `showcase` 为更新倒计时会低频重绘（静态画面）

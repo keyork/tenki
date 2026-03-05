@@ -87,12 +87,32 @@ case "$TARGET" in
         ;;
 esac
 
+resolve_latest_version() {
+    if REL_JSON="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null)"; then
+        TAG="$(printf '%s' "$REL_JSON" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+        if [ -n "$TAG" ]; then
+            printf '%s\n' "$TAG"
+            return 0
+        fi
+    fi
+
+    if TAGS_JSON="$(curl -fsSL "https://api.github.com/repos/${REPO}/tags?per_page=1" 2>/dev/null)"; then
+        TAG="$(printf '%s' "$TAGS_JSON" | sed -n 's/^[[:space:]]*"name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+        if [ -n "$TAG" ]; then
+            printf '%s\n' "$TAG"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
 if [ -z "$VERSION" ]; then
-    VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+    VERSION="$(resolve_latest_version || true)"
 fi
 
 if [ -z "$VERSION" ]; then
-    echo "failed to resolve latest release tag" >&2
+    echo "failed to resolve version from GitHub releases/tags" >&2
     exit 1
 fi
 
@@ -113,8 +133,51 @@ CHECKSUMS="tenki-${VERSION}-checksums.txt"
 BASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
 ARCHIVE_PATH="${TMP_DIR}/${ASSET}"
 
+install_binary() {
+    BIN_PATH="$1"
+    if [ ! -d "$INSTALL_DIR" ]; then
+        mkdir -p "$INSTALL_DIR" 2>/dev/null || true
+    fi
+
+    if [ -w "$INSTALL_DIR" ]; then
+        install -m 755 "$BIN_PATH" "${INSTALL_DIR}/${BIN_NAME}"
+    else
+        require_cmd sudo
+        sudo install -m 755 "$BIN_PATH" "${INSTALL_DIR}/${BIN_NAME}"
+    fi
+}
+
+install_from_source() {
+    require_cmd git
+    require_cmd cargo
+
+    SRC_DIR="${TMP_DIR}/src"
+    echo "Prebuilt archive not found, building from source (${VERSION})..."
+    git clone --depth 1 --branch "$VERSION" "https://github.com/${REPO}.git" "$SRC_DIR"
+    cargo build --release --locked --manifest-path "${SRC_DIR}/Cargo.toml"
+
+    BIN_PATH="${SRC_DIR}/target/release/${BIN_NAME}"
+    if [ ! -f "$BIN_PATH" ]; then
+        echo "failed to build ${BIN_NAME} from source" >&2
+        exit 1
+    fi
+
+    install_binary "$BIN_PATH"
+}
+
 echo "Installing ${BIN_NAME} ${VERSION} (${TARGET})..."
-curl -fL "${BASE_URL}/${ASSET}" -o "${ARCHIVE_PATH}"
+if ! curl -fL "${BASE_URL}/${ASSET}" -o "${ARCHIVE_PATH}"; then
+    install_from_source
+    echo "Installed to ${INSTALL_DIR}/${BIN_NAME}"
+    case ":${PATH}:" in
+        *":${INSTALL_DIR}:"*) ;;
+        *)
+            echo "warning: ${INSTALL_DIR} is not in your PATH" >&2
+            ;;
+    esac
+    echo "Run: ${BIN_NAME} --version"
+    exit 0
+fi
 
 if curl -fsSL "${BASE_URL}/${CHECKSUMS}" -o "${TMP_DIR}/${CHECKSUMS}"; then
     EXPECTED="$(grep " ${ASSET}\$" "${TMP_DIR}/${CHECKSUMS}" | awk '{print $1}' | head -n 1 || true)"
@@ -142,16 +205,7 @@ if [ -z "$BIN_PATH" ]; then
     exit 1
 fi
 
-if [ ! -d "$INSTALL_DIR" ]; then
-    mkdir -p "$INSTALL_DIR" 2>/dev/null || true
-fi
-
-if [ -w "$INSTALL_DIR" ]; then
-    install -m 755 "$BIN_PATH" "${INSTALL_DIR}/${BIN_NAME}"
-else
-    require_cmd sudo
-    sudo install -m 755 "$BIN_PATH" "${INSTALL_DIR}/${BIN_NAME}"
-fi
+install_binary "$BIN_PATH"
 
 echo "Installed to ${INSTALL_DIR}/${BIN_NAME}"
 case ":${PATH}:" in
